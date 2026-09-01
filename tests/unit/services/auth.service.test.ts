@@ -24,6 +24,9 @@ const mockPasswordResetRepository = {
   deleteByEmail: vi.fn(),
 }
 
+// Mock rbac
+const mockAssignRoleToUser = vi.fn().mockResolvedValue(undefined)
+
 // Mock the db module
 vi.mock('../../../src/db/index', () => ({
   userRepository: mockUserRepository,
@@ -31,9 +34,15 @@ vi.mock('../../../src/db/index', () => ({
   passwordResetRepository: mockPasswordResetRepository,
 }))
 
+// Mock the rbac module
+vi.mock('../../../src/lib/rbac', () => ({
+  assignRoleToUser: mockAssignRoleToUser,
+}))
+
 describe('Auth Service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockAssignRoleToUser.mockResolvedValue(undefined)
   })
 
   describe('register', () => {

@@ -1,20 +1,26 @@
-import { describe, test, expect, beforeEach } from 'bun:test'
+import { describe, test, expect, beforeEach, vi } from 'bun:test'
 import { Hono } from 'hono'
-import { requireRole, requireOwnerOrAdmin, allowSelfOrAdmin } from '../../../src/middleware/rbac.middleware'
+import { requirePermission, requireRole, requireOwnerOrPermission, allowSelfOrPermission } from '../../../src/middleware/rbac.middleware'
+
+// Mock rbac functions
+const mockHasPermission = vi.fn()
+const mockHasRole = vi.fn()
+
+vi.mock('../../../src/lib/rbac', () => ({
+  hasPermission: (...args: any[]) => mockHasPermission(...args),
+  hasRole: (...args: any[]) => mockHasRole(...args),
+}))
 
 describe('RBAC Middleware', () => {
-  let app: Hono
-
-  const mockUser = { id: 1, email: 'test@test.com', role: 'user' as const }
-  const mockAdmin = { id: 2, email: 'admin@test.com', role: 'admin' as const }
-
   beforeEach(() => {
-    app = new Hono()
+    vi.clearAllMocks()
+    mockHasPermission.mockReset()
+    mockHasRole.mockReset()
   })
 
-  const createMockContext = (user: any, paramId?: string, ownerId?: number) => {
+  const createMockContext = (user: any, paramId?: string) => {
     const c: any = {
-      _getValues: { user, ownerId },
+      _getValues: { user },
       get: (key: string) => c._getValues[key],
       set: (key: string, value: any) => {
         c._getValues[key] = value
@@ -33,10 +39,60 @@ describe('RBAC Middleware', () => {
     return c
   }
 
+  describe('requirePermission', () => {
+    test('should allow user with required permission', async () => {
+      mockHasRole.mockResolvedValue(false)
+      mockHasPermission.mockResolvedValue(true)
+
+      const middleware = requirePermission('users:read')
+      const c = createMockContext({ id: 1 })
+      let nextCalled = false
+
+      await middleware(c as any, async () => {
+        nextCalled = true
+      })
+
+      expect(nextCalled).toBe(true)
+    })
+
+    test('should reject user without required permission', async () => {
+      mockHasRole.mockResolvedValue(false)
+      mockHasPermission.mockResolvedValue(false)
+
+      const middleware = requirePermission('users:delete')
+      const c = createMockContext({ id: 1 })
+      let nextCalled = false
+
+      await middleware(c as any, async () => {
+        nextCalled = true
+      })
+
+      expect(nextCalled).toBe(false)
+      expect(c._status).toBe(403)
+    })
+
+    test('should allow admin regardless of permission', async () => {
+      mockHasRole.mockResolvedValue(true)
+
+      const middleware = requirePermission('users:delete')
+      const c = createMockContext({ id: 1 })
+      let nextCalled = false
+
+      await middleware(c as any, async () => {
+        nextCalled = true
+      })
+
+      expect(nextCalled).toBe(true)
+      expect(mockHasPermission).not.toHaveBeenCalled()
+    })
+  })
+
   describe('requireRole', () => {
-    test('should allow admin to access admin route', async () => {
+    test('should allow user with required role', async () => {
+      mockHasRole.mockResolvedValue(true)
+
       const middleware = requireRole('admin')
-      const c = createMockContext(mockAdmin)
+      const c = createMockContext({ id: 1 })
       let nextCalled = false
 
       await middleware(c as any, async () => {
@@ -46,62 +102,11 @@ describe('RBAC Middleware', () => {
       expect(nextCalled).toBe(true)
     })
 
-    test('should reject user from admin route', async () => {
+    test('should reject user without required role', async () => {
+      mockHasRole.mockResolvedValue(false)
+
       const middleware = requireRole('admin')
-      const c = createMockContext(mockUser)
-      let nextCalled = false
-
-      await middleware(c as any, async () => {
-        nextCalled = true
-      })
-
-      expect(nextCalled).toBe(false)
-      expect(c._status).toBe(403)
-    })
-
-    test('should reject request without user', async () => {
-      const middleware = requireRole('admin')
-      const c = createMockContext(undefined)
-      let nextCalled = false
-
-      await middleware(c as any, async () => {
-        nextCalled = true
-      })
-
-      expect(nextCalled).toBe(false)
-      expect(c._status).toBe(401)
-    })
-  })
-
-  describe('requireOwnerOrAdmin', () => {
-    test('should allow admin regardless of owner', async () => {
-      const middleware = requireOwnerOrAdmin()
-      const c = createMockContext(mockAdmin, undefined, 999)
-      let nextCalled = false
-
-      await middleware(c as any, async () => {
-        nextCalled = true
-      })
-
-      expect(nextCalled).toBe(true)
-    })
-
-    test('should allow owner to access resource', async () => {
-      const middleware = requireOwnerOrAdmin()
-      const c = createMockContext(mockUser, undefined, 1)
-      let nextCalled = false
-
-      await middleware(c as any, async () => {
-        nextCalled = true
-      })
-
-      expect(nextCalled).toBe(true)
-    })
-
-    test('should reject non-owner', async () => {
-      const middleware = requireOwnerOrAdmin()
-      // User id=1 but ownerId=2
-      const c = createMockContext(mockUser, undefined, 2)
+      const c = createMockContext({ id: 1 })
       let nextCalled = false
 
       await middleware(c as any, async () => {
@@ -113,10 +118,12 @@ describe('RBAC Middleware', () => {
     })
   })
 
-  describe('allowSelfOrAdmin', () => {
-    test('should allow admin to access any resource', async () => {
-      const middleware = allowSelfOrAdmin()
-      const c = createMockContext(mockAdmin, '999')
+  describe('allowSelfOrPermission', () => {
+    test('should allow admin regardless of permission', async () => {
+      mockHasRole.mockResolvedValue(true)
+
+      const middleware = allowSelfOrPermission('users:update')
+      const c = createMockContext({ id: 1 }, '999')
       let nextCalled = false
 
       await middleware(c as any, async () => {
@@ -126,9 +133,11 @@ describe('RBAC Middleware', () => {
       expect(nextCalled).toBe(true)
     })
 
-    test('should allow user to access own resource', async () => {
-      const middleware = allowSelfOrAdmin()
-      const c = createMockContext(mockUser, '1')
+    test('should allow user accessing own resource', async () => {
+      mockHasRole.mockResolvedValue(false)
+
+      const middleware = allowSelfOrPermission('users:update')
+      const c = createMockContext({ id: 1 }, '1')
       let nextCalled = false
 
       await middleware(c as any, async () => {
@@ -138,9 +147,27 @@ describe('RBAC Middleware', () => {
       expect(nextCalled).toBe(true)
     })
 
-    test('should reject user accessing other resource', async () => {
-      const middleware = allowSelfOrAdmin()
-      const c = createMockContext(mockUser, '2')
+    test('should allow user with permission', async () => {
+      mockHasRole.mockResolvedValue(false)
+      mockHasPermission.mockResolvedValue(true)
+
+      const middleware = allowSelfOrPermission('users:update')
+      const c = createMockContext({ id: 1 }, '999')
+      let nextCalled = false
+
+      await middleware(c as any, async () => {
+        nextCalled = true
+      })
+
+      expect(nextCalled).toBe(true)
+    })
+
+    test('should reject user without permission accessing other resource', async () => {
+      mockHasRole.mockResolvedValue(false)
+      mockHasPermission.mockResolvedValue(false)
+
+      const middleware = allowSelfOrPermission('users:update')
+      const c = createMockContext({ id: 1 }, '999')
       let nextCalled = false
 
       await middleware(c as any, async () => {

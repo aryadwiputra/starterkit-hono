@@ -1,6 +1,7 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { z } from 'zod'
 import { swaggerUI } from '@hono/swagger-ui'
+import { zValidator } from '@hono/zod-validator'
 
 /**
  * OPENAPI SPEC
@@ -73,7 +74,7 @@ openapi.post(
       409: { description: 'Email already exists', content: { 'application/json': { schema: ErrorSchema } } },
     },
   },
-  openapi.validator('json', RegisterSchema),
+  zValidator('json',RegisterSchema),
   async (c) => {
     // Handler akan di-override di app.ts dengan handler asli
     return c.json({ message: 'Register endpoint' })
@@ -92,7 +93,7 @@ openapi.post(
       429: { description: 'Too many requests', content: { 'application/json': { schema: ErrorSchema } } },
     },
   },
-  openapi.validator('json', LoginSchema),
+  zValidator('json',LoginSchema),
   async (c) => {
     return c.json({ message: 'Login endpoint' })
   }
@@ -108,7 +109,7 @@ openapi.post(
       200: { description: 'Reset email sent if account exists' },
     },
   },
-  openapi.validator('json', ForgotPasswordSchema),
+  zValidator('json',ForgotPasswordSchema),
   async (c) => {
     return c.json({ message: 'If email exists, reset link will be sent' })
   }
@@ -125,7 +126,7 @@ openapi.post(
       400: { description: 'Invalid token or weak password' },
     },
   },
-  openapi.validator('json', ResetPasswordSchema),
+  zValidator('json',ResetPasswordSchema),
   async (c) => {
     return c.json({ message: 'Password reset successful' })
   }
@@ -243,7 +244,7 @@ openapi.patch(
       403: { description: 'Forbidden' },
     },
   },
-  openapi.validator('json', UpdateUserSchema),
+  zValidator('json',UpdateUserSchema),
   async (c) => {
     return c.json({ message: 'User updated' })
   }
@@ -280,7 +281,7 @@ openapi.patch(
       403: { description: 'Forbidden - admin only' },
     },
   },
-  openapi.validator('json', ChangeRoleSchema),
+  zValidator('json',ChangeRoleSchema),
   async (c) => {
     return c.json({ message: 'Role changed' })
   }
