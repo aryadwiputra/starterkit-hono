@@ -1,0 +1,55 @@
+# Promtail Configuration
+# https://grafana.com/docs/loki/latest/clients/promtail/
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /var/lib/promtail/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    tenant_id: 1
+
+scrape_configs:
+  # App logs
+  - job_name: app-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: app
+          service: starterkit-hono
+          __path__: /logs/app-*.log
+    pipeline_stages:
+      - json:
+          expressions:
+            level: level
+            time: time
+            service: service
+            type: type
+            message: message
+      - labels:
+          level:
+          service:
+          type:
+
+  # Error logs only
+  - job_name: app-errors
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: app-errors
+          service: starterkit-hono
+          __path__: /logs/app-*.log
+    pipeline_stages:
+      - json:
+          expressions:
+            level: level
+      - match:
+          selector: '{level="error"}'
+          pipeline_stages:
+            - labels:
+                level:

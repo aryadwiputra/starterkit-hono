@@ -1,4 +1,5 @@
 services:
+  # App service
   app:
     build:
       context: .
@@ -10,9 +11,11 @@ services:
       - PORT=3000
       - DATABASE_URL=file:./data.db
       - SESSION_SECRET=${SESSION_SECRET}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - REDIS_URL=redis://redis:6379
     volumes:
       - app-data:/app/data
+      - ./logs:/app/logs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
@@ -20,6 +23,57 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    depends_on:
+      - redis
+
+  # Redis for job queues
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  # Loki - Log aggregation
+  loki:
+    image: grafana/loki:3.2.1
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./infra/loki-config.yml:/etc/loki/loki-config.yml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/loki-config.yml
+    restart: unless-stopped
+
+  # Promtail - Log shipper
+  promtail:
+    image: grafana/promtail:3.2.1
+    volumes:
+      - ./infra/promtail-config.yml:/etc/promtail/promtail-config.yml
+      - ./logs:/logs:ro
+    command: -config.file=/etc/promtail/promtail-config.yml
+    restart: unless-stopped
+    depends_on:
+      - loki
+
+  # Grafana - Log visualization
+  grafana:
+    image: grafana/grafana:11.4.0
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+    depends_on:
+      - loki
 
 volumes:
   app-data:
+  redis-data:
+  loki-data:
+  grafana-data:
