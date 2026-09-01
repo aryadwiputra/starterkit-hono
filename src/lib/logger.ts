@@ -1,35 +1,107 @@
 import pino from 'pino'
 import { randomUUID } from 'crypto'
+import { mkdirSync, existsSync, readdirSync, unlinkSync } from 'fs'
+import { join } from 'path'
 
 /**
  * Logger Configuration
  *
  * Development: Pretty print output (human-readable)
- * Production: JSON format (structured, parseable)
+ * Production: JSON format + file with daily rotation
  */
 
 const isDev = process.env.NODE_ENV !== 'production'
+const logDir = process.env.LOG_DIR || 'logs'
 
-export const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  // Pretty print for development
-  transport: isDev
-    ? {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname',
-        },
+/**
+ * Format date untuk filename
+ */
+function formatDate(date: Date): string {
+  return date.toISOString().split('T')[0] // YYYY-MM-DD
+}
+
+/**
+ * Get log file path untuk hari ini
+ */
+function getLogFilePath(): string {
+  const filename = `app-${formatDate(new Date())}.log`
+  return join(logDir, filename)
+}
+
+/**
+ * Ensure log directory exists
+ */
+function ensureLogDir(): void {
+  if (!existsSync(logDir)) {
+    mkdirSync(logDir, { recursive: true })
+  }
+}
+
+/**
+ * Delete old log files (> 7 days)
+ */
+function cleanupOldLogs(): void {
+  if (!existsSync(logDir)) return
+
+  const files = readdirSync(logDir)
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000 // 7 days ago
+
+  for (const file of files) {
+    if (!file.startsWith('app-') || !file.endsWith('.log')) continue
+
+    const filepath = join(logDir, file)
+    const stat = Bun.file(filepath)
+    if (stat && stat.lastModified && stat.lastModified < cutoff) {
+      try {
+        unlinkSync(filepath)
+        console.log(`🗑️ Deleted old log: ${file}`)
+      } catch {
+        // Ignore errors
       }
-    : undefined,
-  // Base fields untuk semua log
+    }
+  }
+}
+
+// Ensure log directory exists
+ensureLogDir()
+
+// Cleanup old logs on startup
+cleanupOldLogs()
+
+// Create pino instance
+const pinoConfig: pino.LoggerOptions = {
+  level: process.env.LOG_LEVEL || 'info',
   base: {
     service: 'starterkit-hono',
   },
-  // Timestamp format
   timestamp: pino.stdTimeFunctions.isoTime,
-})
+}
+
+// Add file transport for production
+if (!isDev) {
+  // pino.file is built-in for writing to file
+  ;(pinoConfig as any).transport = {
+    targets: [
+      {
+        target: 'pino/file',
+        options: { destination: 1 }, // stdout
+        level: 'info',
+      },
+      {
+        target: 'pino/file',
+        options: { destination: getLogFilePath() },
+        level: 'info',
+      },
+    ],
+  }
+}
+
+export const logger = pino(pinoConfig)
+
+// For development, use pretty print
+if (isDev) {
+  logger.level = process.env.LOG_LEVEL || 'info'
+}
 
 /**
  * Create child logger dengan preset context
