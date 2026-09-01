@@ -1,6 +1,7 @@
 import { userRepository, sessionRepository, passwordResetRepository } from '../db/index'
 import { passwordService } from './password.service'
 import { emailService } from './email.service'
+import { assignRoleToUser } from '../lib/rbac'
 import { nanoid } from 'nanoid'
 
 /**
@@ -53,6 +54,9 @@ export const authService = {
     // Ambil data user yang baru dibuat
     const user = await userRepository.findById(userId)
     if (!user) throw new Error('Gagal membuat user')
+
+    // Assign default role 'user'
+    await assignRoleToUser(user.id, 'user')
 
     // Buat session untuk user yang baru register
     const sessionId = nanoid(32) // 32 character random string

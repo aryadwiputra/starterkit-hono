@@ -1,4 +1,5 @@
 import { userRepository } from '../db/index'
+import { hasRole, assignRoleToUser, removeRoleFromUser, getRoleId } from '../lib/rbac'
 
 /**
  * USER SERVICE
@@ -9,10 +10,6 @@ export const userService = {
    * Method: getProfile
    * Param: userId
    * Return: User profile atau throw error
-   *
-   * Business Rules:
-   * - User harus ada
-   * - Password hash TIDAK dikembalikan ke client
    */
   getProfile: async (userId: number) => {
     const user = await userRepository.findById(userId)
@@ -20,7 +17,6 @@ export const userService = {
       throw new Error('User tidak ditemukan')
     }
 
-    // Hapus passwordHash sebelum return
     const { passwordHash: _, ...userProfile } = user
     return userProfile
   },
@@ -28,17 +24,12 @@ export const userService = {
   /**
    * Method: updateProfile
    * Param: userId, { name?, email? }
-   * Return: Updated user atau throw error
-   *
-   * Business Rules:
-   * - Email harus unik (jika di-update)
-   * - User harus ada
+   * Return: Updated user
    */
   updateProfile: async (
     userId: number,
     data: { name?: string; email?: string }
   ) => {
-    // Jika update email, check apakah email sudah dipakai user lain
     if (data.email) {
       const existingUser = await userRepository.findByEmail(data.email)
       if (existingUser && existingUser.id !== userId) {
@@ -56,52 +47,28 @@ export const userService = {
 
   /**
    * Method: listUsers
-   * Param: { limit, offset, requesterRole }
-   * Return: Array users (admin only)
-   *
-   * Business Rules:
-   * - Hanya admin yang bisa lihat semua user
-   * - Non-admin hanya bisa lihat diri sendiri
+   * Param: requester, { limit, offset }
+   * Return: Array users
+   * Note: Permission check dilakukan di middleware
    */
   listUsers: async (
-    requester: { id: number; role: 'user' | 'admin' },
+    requester: { id: number },
     options?: { limit?: number; offset?: number }
   ) => {
-    // RBAC: Hanya admin yang bisa list semua user
-    if (requester.role !== 'admin') {
-      // Non-admin hanya bisa lihat dirinya sendiri
-      const user = await userRepository.findById(requester.id)
-      if (!user) return []
-      const { passwordHash: _, ...userWithoutPassword } = user
-      return [userWithoutPassword]
-    }
-
     const users = await userRepository.findAll(options)
-
-    // Hapus passwordHash dari semua user
     return users.map(({ passwordHash: _, ...user }) => user)
   },
 
   /**
    * Method: deleteUser
-   * Param: userIdToDelete, requesterId, requesterRole
-   * Return: boolean
-   *
-   * Business Rules:
-   * - Hanya admin yang bisa hapus user
-   * - Admin tidak bisa hapus dirinya sendiri
-   * - User biasa tidak bisa hapus user lain
+   * Param: userIdToDelete, requester
+   * Note: Permission check dilakukan di middleware
    */
   deleteUser: async (
     userIdToDelete: number,
-    requester: { id: number; role: 'user' | 'admin' }
+    requester: { id: number }
   ) => {
-    // RBAC: Hanya admin
-    if (requester.role !== 'admin') {
-      throw new Error('Tidak punya akses')
-    }
-
-    // Self-protection: Admin tidak bisa hapus dirinya sendiri
+    // Self-protection: tidak bisa hapus diri sendiri
     if (userIdToDelete === requester.id) {
       throw new Error('Tidak bisa hapus akun sendiri')
     }
@@ -111,32 +78,25 @@ export const userService = {
 
   /**
    * Method: changeRole
-   * Param: targetUserId, newRole, requester
-   * Return: Updated user
-   *
-   * Business Rules:
-   * - Hanya super-admin (master admin) yang bisa ubah role
-   * - Tidak bisa ubah role diri sendiri
+   * Param: targetUserId, newRole (role name), requester
+   * Note: Permission check dilakukan di middleware
    */
   changeRole: async (
     targetUserId: number,
-    newRole: 'user' | 'admin',
-    requester: { id: number; role: 'user' | 'admin' }
+    newRoleName: 'user' | 'admin',
+    requester: { id: number }
   ) => {
-    // RBAC: Pastikan requester admin
-    if (requester.role !== 'admin') {
-      throw new Error('Hanya admin yang bisa ubah role')
-    }
-
-    // Self-protection
+    // Self-protection: tidak bisa ubah role diri sendiri
     if (targetUserId === requester.id) {
       throw new Error('Tidak bisa ubah role diri sendiri')
     }
 
-    const success = await userRepository.update(targetUserId, { role: newRole })
-    if (!success) {
-      throw new Error('Gagal ubah role')
-    }
+    // Remove semua roles dari user
+    await removeRoleFromUser(targetUserId, 'admin')
+    await removeRoleFromUser(targetUserId, 'user')
+
+    // Assign role baru
+    await assignRoleToUser(targetUserId, newRoleName)
 
     return userService.getProfile(targetUserId)
   },

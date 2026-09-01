@@ -8,6 +8,7 @@
 import { db } from '../src/db'
 import { users } from '../src/db/schema'
 import { passwordService } from '../src/services/password.service'
+import { assignRoleToUser } from '../src/lib/rbac'
 
 async function seed() {
   console.log('🌱 Starting seed...')
@@ -28,8 +29,12 @@ async function seed() {
     email: 'admin@example.com',
     passwordHash: adminPassword,
     name: 'Admin',
-    role: 'admin',
   }).returning({ id: users.id })
+
+  // Assign admin role
+  if (adminId[0]?.id) {
+    await assignRoleToUser(adminId[0].id, 'admin')
+  }
 
   console.log(`✅ Created admin user (ID: ${adminId[0]?.id})`)
   console.log('   Email: admin@example.com')
@@ -41,8 +46,12 @@ async function seed() {
     email: 'user@example.com',
     passwordHash: userPassword,
     name: 'Sample User',
-    role: 'user',
   }).returning({ id: users.id })
+
+  // Assign user role
+  if (userId[0]?.id) {
+    await assignRoleToUser(userId[0].id, 'user')
+  }
 
   console.log(`✅ Created sample user (ID: ${userId[0]?.id})`)
   console.log('   Email: user@example.com')

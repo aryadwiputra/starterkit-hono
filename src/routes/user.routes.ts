@@ -2,7 +2,8 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { userService } from '../services/user.service'
-import { authMiddleware, requireRole } from '../middleware'
+import { authMiddleware } from '../middleware'
+import { requirePermission, allowSelfOrPermission } from '../middleware/rbac.middleware'
 
 const user = new Hono()
 
@@ -20,13 +21,12 @@ const paginationSchema = z.object({
 /**
  * ROUTE: GET /users
  * Penjelasan: List semua users (admin only)
- * Header: Authorization: Bearer <sessionId>
- * Query: ?limit=10&offset=0
+ * Permission: users:read
  */
 user.get(
   '/',
   authMiddleware,
-  requireRole('admin'),
+  requirePermission('users:read'),
   zValidator('query', paginationSchema),
   async (c) => {
     const { limit, offset } = c.req.valid('query')
@@ -47,8 +47,8 @@ user.get(
 /**
  * ROUTE: GET /users/:id
  * Penjelasan: Get user profile by ID
- * Header: Authorization: Bearer <sessionId>
- * Access: User sendiri ATAU admin
+ * Permission: users:read (untuk lihat user lain)
+ *            users:read:own (untuk lihat diri sendiri)
  */
 user.get(
   '/:id',
@@ -57,9 +57,27 @@ user.get(
     const requester = c.get('user')
     const targetId = Number(c.req.param('id'))
 
-    // RBAC: User hanya bisa lihat dirinya sendiri
-    if (requester.role !== 'admin' && requester.id !== targetId) {
-      return c.json({ error: 'Tidak punya akses' }, 403)
+    // Self access - boleh dengan users:read:own
+    if (requester.id === targetId) {
+      // Check permission untuk own
+      const { hasPermission } = await import('../lib/rbac')
+      const hasOwnPerm = await hasPermission(requester.id, 'users:read:own')
+      if (hasOwnPerm) {
+        return await next()
+      }
+    }
+
+    // Admin boleh lihat semua
+    const { hasRole } = await import('../lib/rbac')
+    const isAdmin = await hasRole(requester.id, 'admin')
+    if (isAdmin) {
+      return await next()
+    }
+
+    // Other users - butuh users:read
+    const hasReadPerm = await hasPermission(requester.id, 'users:read')
+    if (!hasReadPerm) {
+      return c.json({ error: 'Forbidden - Tidak punya akses' }, 403)
     }
 
     await next()
@@ -75,9 +93,8 @@ user.get(
 /**
  * ROUTE: PATCH /users/:id
  * Penjelasan: Update user profile
- * Header: Authorization: Bearer <sessionId>
- * Access: User sendiri ATAU admin
- * Body: { name?, email? }
+ * Permission: users:update (untuk update user lain)
+ *            users:update:own (untuk update diri sendiri)
  */
 user.patch(
   '/:id',
@@ -87,9 +104,26 @@ user.patch(
     const requester = c.get('user')
     const targetId = Number(c.req.param('id'))
 
-    // RBAC check
-    if (requester.role !== 'admin' && requester.id !== targetId) {
-      return c.json({ error: 'Tidak punya akses' }, 403)
+    // Self update - boleh dengan users:update:own
+    if (requester.id === targetId) {
+      const { hasPermission } = await import('../lib/rbac')
+      const hasOwnPerm = await hasPermission(requester.id, 'users:update:own')
+      if (hasOwnPerm) {
+        return await next()
+      }
+    }
+
+    // Admin boleh update semua
+    const { hasRole } = await import('../lib/rbac')
+    const isAdmin = await hasRole(requester.id, 'admin')
+    if (isAdmin) {
+      return await next()
+    }
+
+    // Other users - butuh users:update
+    const hasUpdatePerm = await hasPermission(requester.id, 'users:update')
+    if (!hasUpdatePerm) {
+      return c.json({ error: 'Forbidden - Tidak punya akses' }, 403)
     }
 
     await next()
@@ -109,14 +143,13 @@ user.patch(
 
 /**
  * ROUTE: DELETE /users/:id
- * Penjelasan: Delete user (admin only)
- * Header: Authorization: Bearer <sessionId>
- * Access: Admin only (tidak bisa hapus diri sendiri)
+ * Penjelasan: Delete user
+ * Permission: users:delete
  */
 user.delete(
   '/:id',
   authMiddleware,
-  requireRole('admin'),
+  requirePermission('users:delete'),
   async (c) => {
     const targetId = Number(c.req.param('id'))
     const requester = c.get('user')
@@ -129,15 +162,13 @@ user.delete(
 
 /**
  * ROUTE: PATCH /users/:id/role
- * Penjelasan: Change user role (admin only)
- * Header: Authorization: Bearer <sessionId>
- * Access: Admin only
- * Body: { role: 'user' | 'admin' }
+ * Penjelasan: Change user role
+ * Permission: users:role:update
  */
 user.patch(
   '/:id/role',
   authMiddleware,
-  requireRole('admin'),
+  requirePermission('users:role:update'),
   zValidator(
     'json',
     z.object({
