@@ -24,8 +24,14 @@ bun install
 # Setup environment
 cp .env.example .env
 
-# Create database schema
+# Generate migrations
+bun run db:generate
+
+# Push schema to database (development)
 bun run db:push
+
+# Seed initial data (optional - creates admin & sample user)
+bun run db:seed
 
 # Start dev server
 bun run dev
@@ -128,11 +134,14 @@ curl http://localhost:3000/auth/me \
 ## Scripts
 
 ```bash
-bun run dev      # Run with hot reload (port 3000)
-bun run start   # Run without hot reload
-bun test        # Run tests
-bun run db:push # Push schema to database (dev)
-bun run db:studio # Open Drizzle Studio
+bun run dev        # Run with hot reload (port 3000)
+bun run start      # Run without hot reload
+bun test           # Run tests
+bun run db:generate  # Generate migrations
+bun run db:migrate   # Apply migrations
+bun run db:push    # Push schema to database (dev)
+bun run db:studio  # Open Drizzle Studio
+bun run db:seed    # Seed initial data
 ```
 
 ## Tech Stack

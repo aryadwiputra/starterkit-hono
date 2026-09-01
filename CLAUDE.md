@@ -9,12 +9,15 @@ Bun + Hono backend with session-based authentication, RBAC, rate limiting, and p
 ## Commands
 
 ```bash
-bun install          # Install dependencies
-bun run dev         # Run with hot reload (port 3000)
-bun run start       # Run without hot reload
-bun test            # Run tests
-bun run db:push     # Push schema to database (dev)
-bun run db:studio   # Open Drizzle Studio
+bun install            # Install dependencies
+bun run dev           # Run with hot reload (port 3000)
+bun run start         # Run without hot reload
+bun test              # Run tests
+bun run db:generate   # Generate migrations
+bun run db:migrate    # Apply migrations
+bun run db:push       # Push schema to database (dev)
+bun run db:studio     # Open Drizzle Studio
+bun run db:seed       # Seed initial data
 ```
 
 ## Architecture
@@ -45,6 +48,12 @@ src/
 ├── docs/
 │   └── openapi.ts         # OpenAPI/Swagger documentation
 └── index.ts               # App entry, global middleware
+
+scripts/
+└── seed.ts               # Seed initial data
+
+drizzle/
+└── *.sql                 # Database migrations
 
 tests/
 ├── unit/
