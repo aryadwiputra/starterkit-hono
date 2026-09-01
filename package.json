@@ -9,13 +9,15 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-validator": "^0.9.1",
     "@libsql/client": "^0.17.4",
     "bcryptjs": "^2.4.3",
     "drizzle-orm": "^0.30.0",
     "hono": "^4.13.5",
+    "hono-zod-openapi": "^1.1.1",
     "nanoid": "^5.0.0",
-    "zod": "^3.23.0"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

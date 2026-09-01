@@ -1,5 +1,6 @@
 import { userRepository, sessionRepository, passwordResetRepository } from '../db/index'
 import { passwordService } from './password.service'
+import { emailService } from './email.service'
 import { nanoid } from 'nanoid'
 
 /**
@@ -174,9 +175,8 @@ export const authService = {
       expiresAt,
     })
 
-    // Di production: kirim email dengan link reset
-    // Link: https://app.com/auth/reset-password?token=${token}
-    console.log(`🔑 Reset token for ${email}: ${token}`)
+    // Send password reset email
+    await emailService.sendPasswordReset(email, token)
 
     return { message: 'Jika email terdaftar, link reset akan dikirim' }
   },

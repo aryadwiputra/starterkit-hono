@@ -6,6 +6,7 @@ import userRoutes from './routes/user.routes'
 import { authMiddleware, errorHandler, requestIdMiddleware, requestLogger } from './middleware'
 import { env } from './lib/env'
 import { dbHealthCheck } from './db'
+import { openapi } from './docs/openapi'
 
 const app = new Hono()
 
@@ -49,6 +50,9 @@ app.get('/health', (c) => {
     }, 503)
   }
 })
+
+// OpenAPI docs
+app.route('/', openapi)
 
 // Public auth routes (register, login)
 app.route('/auth', publicAuth)
