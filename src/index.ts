@@ -1,14 +1,19 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { logger } from 'hono/logger'
 
 import { publicAuth, protectedAuth } from './routes/auth.routes'
 import userRoutes from './routes/user.routes'
-import { authMiddleware, errorHandler } from './middleware'
+import { authMiddleware, errorHandler, requestIdMiddleware, requestLogger } from './middleware'
 import { env } from './lib/env'
 import { dbHealthCheck } from './db'
 
 const app = new Hono()
+
+// Request ID (must be first)
+app.use('*', requestIdMiddleware)
+
+// Request logging
+app.use('*', requestLogger)
 
 // CORS - configurable allowed origins
 const allowedOrigins = env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()) ?? ['http://localhost:3000']
@@ -18,9 +23,6 @@ app.use('*', cors({
   allowHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }))
-
-// Logger
-app.use('*', logger())
 
 // Error handler
 app.onError(errorHandler)
