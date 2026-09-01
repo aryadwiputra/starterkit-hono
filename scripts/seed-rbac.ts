@@ -35,6 +35,9 @@ const DEFAULT_PERMISSIONS = [
   { name: 'files:create', description: 'Upload file', resource: 'files', action: 'create' },
   { name: 'files:read', description: 'Lihat file', resource: 'files', action: 'read' },
   { name: 'files:delete', description: 'Hapus file', resource: 'files', action: 'delete' },
+
+  // Broadcast permissions
+  { name: 'broadcast:send', description: 'Kirim broadcast', resource: 'broadcast', action: 'send' },
 ]
 
 const DEFAULT_ROLES = [

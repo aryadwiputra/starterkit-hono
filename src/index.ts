@@ -6,6 +6,7 @@ import userRoutes from './routes/user.routes'
 import healthRoutes from './routes/health.routes'
 import auditRoutes from './routes/audit.routes'
 import uploadRoutes from './routes/upload.routes'
+import broadcastRoutes from './routes/broadcast.routes'
 import { authMiddleware, errorHandler, requestIdMiddleware, requestLogger } from './middleware'
 import { env } from './lib/env'
 import { logger, logStartup } from './lib/logger'
@@ -60,10 +61,21 @@ app.route('/audit', auditRoutes)
 // Upload routes
 app.route('/upload', uploadRoutes)
 
+// Broadcast routes (admin only)
+app.route('/admin', broadcastRoutes)
+
 // Register cleanup for database connection
 registerCleanup(async () => {
   logger.info({ type: 'cleanup', message: 'Closing database connection...' })
   // bun:sqlite doesn't need explicit close, but good practice
+})
+
+// Register cleanup for Redis/queues
+registerCleanup(async () => {
+  const { closeQueues } = await import('./lib/queue')
+  const { closeRedis } = await import('./lib/redis')
+  await closeQueues()
+  await closeRedis()
 })
 
 // Setup graceful shutdown

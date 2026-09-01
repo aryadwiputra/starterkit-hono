@@ -36,6 +36,12 @@ const envSchema = z.object({
   S3_ACCESS_KEY: z.string().optional(),
   S3_SECRET_KEY: z.string().optional(),
   S3_PUBLIC_URL: z.string().optional(),
+
+  // Redis (optional - required for queues)
+  REDIS_URL: z.string().optional(),
+
+  // Resend Email (optional)
+  RESEND_API_KEY: z.string().optional(),
 })
 
 /**
