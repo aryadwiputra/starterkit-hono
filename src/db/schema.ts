@@ -2,30 +2,103 @@ import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
 import { relations } from 'drizzle-orm'
 
 /**
+ * TABEL: permissions
+ * Penjelasan: Granular permissions untuk RBAC
+ * Pattern: resource:action (contoh: users:create, posts:read)
+ */
+export const permissions = sqliteTable('permissions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(), // contoh: 'users:create'
+  description: text('description'), // contoh: 'Buat user baru'
+  resource: text('resource').notNull(), // contoh: 'users', 'posts'
+  action: text('action').notNull(), // contoh: 'create', 'read', 'update', 'delete'
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+})
+
+export const permissionsRelations = relations(permissions, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+}))
+
+/**
+ * TABEL: roles
+ * Penjelasan: Role definitions untuk RBAC
+ */
+export const roles = sqliteTable('roles', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(), // contoh: 'admin', 'user'
+  description: text('description'),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+})
+
+export const rolesRelations = relations(roles, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+  userRoles: many(userRoles),
+}))
+
+/**
+ * TABEL: role_permissions
+ * Penjelasan: Junction table - many-to-many roles ↔ permissions
+ */
+export const rolePermissions = sqliteTable('role_permissions', {
+  roleId: integer('role_id')
+    .notNull()
+    .references(() => roles.id, { onDelete: 'cascade' }),
+  permissionId: integer('permission_id')
+    .notNull()
+    .references(() => permissions.id, { onDelete: 'cascade' }),
+})
+
+export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
+  role: one(roles, {
+    fields: [rolePermissions.roleId],
+    references: [roles.id],
+  }),
+  permission: one(permissions, {
+    fields: [rolePermissions.permissionId],
+    references: [permissions.id],
+  }),
+}))
+
+/**
+ * TABEL: user_roles
+ * Penjelasan: Junction table - many-to-many users ↔ roles
+ */
+export const userRoles = sqliteTable('user_roles', {
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  roleId: integer('role_id')
+    .notNull()
+    .references(() => roles.id, { onDelete: 'cascade' }),
+})
+
+export const userRolesRelations = relations(userRoles, ({ one }) => ({
+  user: one(users, {
+    fields: [userRoles.userId],
+    references: [users.id],
+  }),
+  role: one(roles, {
+    fields: [userRoles.roleId],
+    references: [roles.id],
+  }),
+}))
+
+/**
  * TABEL: users
  * Penjelasan: Menyimpan data user account
  */
 export const users = sqliteTable('users', {
-  // Primary key - auto increment oleh SQLite
   id: integer('id').primaryKey({ autoIncrement: true }),
-
-  // Email - unique constraint supaya tidak ada duplikat
   email: text('email').notNull().unique(),
-
-  // Password hash - JANGAN simpan password plain text!
-  // Selalu hash sebelum simpan, bandingkan hash saat login
   passwordHash: text('password_hash').notNull(),
-
-  // Nama user
   name: text('name').notNull(),
-
-  // Role untuk RBAC - default 'user', bisa 'admin'
-  // Menggunakan text karena SQLite tidak punya enum native
-  role: text('role', { enum: ['user', 'admin'] })
+  isActive: integer('is_active', { mode: 'boolean' })
     .notNull()
-    .default('user'),
-
-  // Timestamp untuk tracking kapan data dibuat/diubah
+    .default(true),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .$defaultFn(() => new Date()),
@@ -36,37 +109,27 @@ export const users = sqliteTable('users', {
 
 /**
  * RELASI: Defines how tables relate to each other
- * Penjelasan: Satu user bisa punya banyak session
  */
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
+  userRoles: many(userRoles),
 }))
 
 /**
  * TABEL: sessions
  * Penjelasan: Menyimpan active user sessions
- * Berbeda dari JWT - ini untuk server-side session tracking
  */
 export const sessions = sqliteTable('sessions', {
-  id: text('id').primaryKey(), // UUID untuk session ID
-
-  // Foreign key ke users.id
-  // CASCADE DELETE = jika user dihapus, semua session-nya ikut dihapus
+  id: text('id').primaryKey(),
   userId: integer('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-
-  // Expired timestamp - session invalid setelah waktu ini
   expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
-
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .$defaultFn(() => new Date()),
 })
 
-/**
- * Relasi: satu session milik satu user
- */
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, {
     fields: [sessions.userId],
@@ -77,26 +140,26 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 /**
  * TABEL: password_resets
  * Penjelasan: Menyimpan token reset password
- * Token expires dalam 1 jam setelah dibuat
  */
 export const passwordResets = sqliteTable('password_resets', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-
-  // Token unik untuk reset password
   token: text('token').notNull().unique(),
-
-  // Email user yang minta reset
   email: text('email').notNull(),
-
-  // Expired timestamp
   expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
-
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .$defaultFn(() => new Date()),
 })
 
-// Type exports untuk use di seluruh app
+// Type exports
+export type Permission = typeof permissions.$inferSelect
+export type NewPermission = typeof permissions.$inferInsert
+export type Role = typeof roles.$inferSelect
+export type NewRole = typeof roles.$inferInsert
+export type RolePermission = typeof rolePermissions.$inferSelect
+export type NewRolePermission = typeof rolePermissions.$inferInsert
+export type UserRole = typeof userRoles.$inferSelect
+export type NewUserRole = typeof userRoles.$inferInsert
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Session = typeof sessions.$inferSelect
