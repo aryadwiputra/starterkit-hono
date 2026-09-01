@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Bun + Hono backend with session-based authentication, RBAC, rate limiting, and password reset. Production-ready starter kit for secure APIs.
+Bun + Hono backend with session-based authentication, RBAC, structured logging, and production-ready infrastructure. Starter kit for secure APIs.
 
 ## Commands
 
@@ -25,59 +25,76 @@ bun run db:seed       # Seed initial data
 ```
 src/
 ├── db/
-│   ├── schema.ts          # Drizzle schema (users, sessions, password_resets)
+│   ├── schema.ts          # Drizzle schema (users, sessions, permissions, roles)
 │   └── index.ts           # DB connection + repositories
+├── lib/
+│   ├── logger.ts          # Pino structured logging
+│   ├── env.ts             # Zod environment validation
+│   └── shutdown.ts        # Graceful shutdown handler
 ├── services/
 │   ├── auth.service.ts    # Login, register, logout, password reset
-│   ├── user.service.ts    # User CRUD + profile management
+│   ├── user.service.ts     # User CRUD + profile management
 │   ├── password.service.ts # Password hashing (bcrypt)
-│   └── email.service.ts   # Email sending (password reset)
+│   └── email.service.ts    # Email sending (password reset)
 ├── middleware/
 │   ├── auth.middleware.ts      # Session validation
-│   ├── rbac.middleware.ts      # Role-based access control
-│   ├── error.middleware.ts     # Global error handler
-│   ├── rate-limit.ts          # Rate limiting
-│   ├── request-id.ts          # Request ID tracing
-│   └── request-logger.ts      # Request/response logging
+│   ├── rbac.middleware.ts      # Permission-based access control
+│   ├── error.middleware.ts    # Global error handler
+│   ├── rate-limit.ts           # Rate limiting
+│   ├── request-id.ts           # Request ID tracing
+│   └── request-logger.ts       # Structured request logging
 ├── routes/
 │   ├── auth.routes.ts     # Auth endpoints
-│   └── user.routes.ts     # User CRUD endpoints
-├── lib/
-│   ├── env.ts             # Environment validation
-│   └── cleanup.ts         # Session cleanup scheduler
-├── docs/
-│   └── openapi.ts         # OpenAPI/Swagger documentation
+│   ├── user.routes.ts     # User CRUD endpoints
+│   └── health.routes.ts   # Health check endpoints
 └── index.ts               # App entry, global middleware
 
 scripts/
-└── seed.ts               # Seed initial data
+├── seed.ts               # Seed initial data
+└── migrate-rbac.ts       # RBAC migration
 
 drizzle/
 └── *.sql                 # Database migrations
-
-tests/
-├── unit/
-│   ├── services/          # Service unit tests
-│   └── middleware/        # Middleware unit tests
 ```
 
-## Layer Flow
+## Core Features
 
-```
-Request → Rate Limit → Auth → RBAC → Handler → Service → Repository → Database
-                   ↓         ↓        ↓
-              (429 error)  (401)    (403)
-```
+### Authentication
+- Session-based auth (stored in SQLite)
+- Password hashing with bcrypt
+- Rate limiting on login
 
-## Key Patterns
+### RBAC (Role-Based Access Control)
+- Permissions: `users:create`, `users:read`, `posts:update`, etc.
+- Roles: `admin` (all permissions), `user` (limited permissions)
+- Junction tables: `role_permissions`, `user_roles`
 
-- **Session-based auth** — stored in SQLite (not JWT)
-- **Repository pattern** — data access layer
-- **Service layer** — business logic, no HTTP concerns
-- **RBAC** — `user` and `admin` roles
-- **Rate limiting** — in-memory, per-IP
-- **Zod validation** — request body/query validation
-- **Environment validation** — type-safe config from `.env`
+### Logging
+- Pino structured logging
+- JSON format (production) / Pretty print (development)
+- Request correlation IDs
+- Log levels: trace, debug, info, warn, error, fatal
+
+### Health Checks
+- `GET /health` - Full health status
+- `GET /health/live` - Liveness probe
+- `GET /health/ready` - Readiness probe (checks DB)
+
+### Graceful Shutdown
+- Handles SIGTERM, SIGINT
+- Cleanup registered functions
+- Force exit after timeout
+
+## Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| NODE_ENV | No | development | Environment |
+| PORT | No | 3000 | Server port |
+| LOG_LEVEL | No | info | Log level |
+| DATABASE_URL | No | file:./data.db | Database path |
+| SESSION_EXPIRY_DAYS | No | 7 | Session expiry |
+| CORS_ORIGIN | No | localhost:3000 | Allowed origins |
 
 ## API Endpoints
 
@@ -95,6 +112,9 @@ Request → Rate Limit → Auth → RBAC → Handler → Service → Repository 
 | PATCH | /api/users/:id | ✅ | Update profile |
 | DELETE | /api/users/:id | ✅ | Delete user (admin only) |
 | PATCH | /api/users/:id/role | ✅ | Change role (admin only) |
+| GET | /health | ✅ | Health check |
+| GET | /health/live | ❌ | Liveness probe |
+| GET | /health/ready | ❌ | Readiness probe |
 
 ## Security Features
 

@@ -1,57 +1,39 @@
 import { Context, Next } from 'hono'
-import { env } from '../lib/env'
+import { logger, logRequest, generateCorrelationId } from '../lib/logger'
 
 /**
- * MIDDLEWARE REQUEST LOGGING
- * Penjelasan: Log method, path, status, dan durasi request
+ * REQUEST LOGGING MIDDLEWARE
+ *
+ * Log method, path, status, dan durasi request.
+ * Gunakan pino untuk structured logging.
  */
+
 export const requestLogger = async (c: Context, next: Next) => {
   const start = Date.now()
-  const requestId = c.get('requestId') || 'unknown'
+
+  // Get or generate correlation ID
+  const correlationId = (c.get('requestId') as string) || generateCorrelationId()
+  c.set('correlationId', correlationId)
 
   // Log request masuk
-  logRequest('IN', c.req.method, c.req.path, requestId)
+  logRequest({
+    method: c.req.method,
+    path: c.req.path,
+    correlationId,
+    userAgent: c.req.header('user-agent'),
+    ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown',
+  })
 
   await next()
 
   const duration = Date.now() - start
-  const status = c.res.status
 
   // Log response
-  logResponse('OUT', c.req.method, c.req.path, status, duration, requestId)
-}
-
-function logRequest(dir: string, method: string, path: string, requestId: string) {
-  if (env.NODE_ENV === 'development') {
-    console.log(`[${dir}] ${method} ${path} | ${requestId}`)
-  }
-}
-
-function logResponse(
-  dir: string,
-  method: string,
-  path: string,
-  status: number,
-  duration: number,
-  requestId: string
-) {
-  const statusColor = status >= 400 ? '🔴' : status >= 300 ? '🟡' : '🟢'
-
-  if (env.NODE_ENV === 'development') {
-    console.log(`${statusColor} [${dir}] ${method} ${path} ${status} ${duration}ms | ${requestId}`)
-  } else {
-    // Format JSON untuk production
-    console.log(
-      JSON.stringify({
-        type: 'request',
-        direction: dir,
-        method,
-        path,
-        status,
-        duration,
-        requestId,
-        timestamp: new Date().toISOString(),
-      })
-    )
-  }
+  logRequest({
+    method: c.req.method,
+    path: c.req.path,
+    status: c.res.status,
+    duration,
+    correlationId,
+  })
 }
