@@ -142,3 +142,40 @@ bun run db:studio # Open Drizzle Studio
 - **ORM**: Drizzle ORM
 - **Database**: SQLite (better-sqlite3)
 - **Validation**: Zod
+
+## Docker
+
+### Production
+```bash
+cp .env.example .env
+# Edit .env with production values
+
+docker-compose up -d
+```
+
+### Development
+```bash
+docker-compose -f docker-compose.dev.yml up
+```
+
+### Health Check
+```bash
+curl http://localhost:3000/health
+```
+
+## Deployment
+
+The app includes:
+- Multi-stage Dockerfile for minimal production image
+- docker-compose.yml for easy deployment
+- GitHub Actions CI workflow
+- Health check endpoint with DB status
+
+### Environment Variables for Production
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | SQLite file path |
+| `SESSION_SECRET` | Yes | Min 32 characters |
+| `ALLOWED_ORIGINS` | No | Comma-separated allowed CORS origins |
+| `PORT` | No | Server port (default: 3000) |

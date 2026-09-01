@@ -12,6 +12,13 @@ const sqlite = new Database('./data.db')
 export const db = drizzle(sqlite, { schema })
 
 /**
+ * Health check - simple ping to DB
+ */
+export const dbHealthCheck = () => {
+  return sqlite.query('SELECT 1').all()
+}
+
+/**
  * USER REPOSITORY
  * Penjelasan: Semua query yang berhubungan dengan tabel 'users'
  * Pattern: static methods, tapi bisa juga pakai class

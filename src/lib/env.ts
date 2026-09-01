@@ -11,6 +11,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   DATABASE_URL: z.string().default('file:./data.db'),
   SESSION_SECRET: z.string().min(32).default('default-secret-change-in-production'),
+  ALLOWED_ORIGINS: z.string().optional(),
 })
 
 // Parse and validate

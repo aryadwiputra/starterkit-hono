@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rtk ls *)",
+      "Bash(rtk find *)",
+      "Bash(bun *)",
+      "Bash(npm view *)",
+      "Bash(rtk read *)",
+      "Bash(pkill -f \"bun.*index.ts\")",
+      "Bash(rtk curl *)",
+      "Bash(curl -s -X POST http://localhost:3000/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"test@baru.com\",\"password\":\"password123\"}')",
+      "Bash(curl -s http://localhost:3000/auth/me -H \"Authorization: Bearer M1k6829GSlhv75TjUFrB4dysa1JXqxi8\")",
+      "Bash(git *)",
+      "Bash(gh *)"
+    ]
+  }
+}
