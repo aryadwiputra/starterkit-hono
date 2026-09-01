@@ -30,6 +30,11 @@ const DEFAULT_PERMISSIONS = [
   // Settings permissions
   { name: 'settings:read', description: 'Lihat settings', resource: 'settings', action: 'read' },
   { name: 'settings:update', description: 'Update settings', resource: 'settings', action: 'update' },
+
+  // Files permissions
+  { name: 'files:create', description: 'Upload file', resource: 'files', action: 'create' },
+  { name: 'files:read', description: 'Lihat file', resource: 'files', action: 'read' },
+  { name: 'files:delete', description: 'Hapus file', resource: 'files', action: 'delete' },
 ]
 
 const DEFAULT_ROLES = [
@@ -44,6 +49,9 @@ const USER_PERMISSIONS = [
   'posts:read',
   'posts:update:own',
   'posts:delete:own',
+  'files:create',
+  'files:read',
+  'files:delete',
 ]
 
 async function seedRbac() {

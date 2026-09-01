@@ -4,6 +4,8 @@ import { cors } from 'hono/cors'
 import { publicAuth, protectedAuth } from './routes/auth.routes'
 import userRoutes from './routes/user.routes'
 import healthRoutes from './routes/health.routes'
+import auditRoutes from './routes/audit.routes'
+import uploadRoutes from './routes/upload.routes'
 import { authMiddleware, errorHandler, requestIdMiddleware, requestLogger } from './middleware'
 import { env } from './lib/env'
 import { logger, logStartup } from './lib/logger'
@@ -51,6 +53,12 @@ app.route('/auth', protectedAuth)
 // Protected API routes
 app.use('/api/*', authMiddleware)
 app.route('/api/users', userRoutes)
+
+// Audit routes (admin only)
+app.route('/audit', auditRoutes)
+
+// Upload routes
+app.route('/upload', uploadRoutes)
 
 // Register cleanup for database connection
 registerCleanup(async () => {

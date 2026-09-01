@@ -151,6 +151,50 @@ export const passwordResets = sqliteTable('password_resets', {
     .$defaultFn(() => new Date()),
 })
 
+/**
+ * TABEL: audit_logs
+ * Penjelasan: Track semua mutation untuk audit trail
+ */
+export const auditLogs = sqliteTable('audit_logs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+  action: text('action').notNull(), // 'create', 'update', 'delete'
+  resource: text('resource').notNull(), // 'users', 'posts', 'settings'
+  resourceId: text('resource_id'), // ID dari resource yang diubah
+  oldValue: text('old_value'), // JSON string
+  newValue: text('new_value'), // JSON string
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+})
+
+/**
+ * TABEL: files
+ * Penjelasan: Track uploaded files (metadata, bukan file actual)
+ */
+export const files = sqliteTable('files', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  key: text('key').notNull().unique(), // S3 key
+  filename: text('filename').notNull(), // Original filename
+  mimeType: text('mime_type').notNull(),
+  size: integer('size').notNull(), // bytes
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+})
+
+export const filesRelations = relations(files, ({ one }) => ({
+  user: one(users, {
+    fields: [files.userId],
+    references: [users.id],
+  }),
+}))
+
 // Type exports
 export type Permission = typeof permissions.$inferSelect
 export type NewPermission = typeof permissions.$inferInsert
@@ -166,3 +210,7 @@ export type Session = typeof sessions.$inferSelect
 export type NewSession = typeof sessions.$inferInsert
 export type PasswordReset = typeof passwordResets.$inferSelect
 export type NewPasswordReset = typeof passwordResets.$inferInsert
+export type AuditLog = typeof auditLogs.$inferSelect
+export type NewAuditLog = typeof auditLogs.$inferInsert
+export type File = typeof files.$inferSelect
+export type NewFile = typeof files.$inferInsert

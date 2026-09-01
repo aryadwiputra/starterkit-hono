@@ -28,6 +28,14 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().email().optional(),
+
+  // S3 Storage (optional)
+  S3_BUCKET: z.string().optional(),
+  S3_REGION: z.string().default('us-east-1'),
+  S3_ENDPOINT: z.string().optional(), // For MinIO, etc.
+  S3_ACCESS_KEY: z.string().optional(),
+  S3_SECRET_KEY: z.string().optional(),
+  S3_PUBLIC_URL: z.string().optional(),
 })
 
 /**
