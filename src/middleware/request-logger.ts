@@ -2,14 +2,14 @@ import { Context, Next } from 'hono'
 import { env } from '../lib/env'
 
 /**
- * REQUEST LOGGING MIDDLEWARE
- * Log request method, path, status, and duration
+ * MIDDLEWARE REQUEST LOGGING
+ * Penjelasan: Log method, path, status, dan durasi request
  */
 export const requestLogger = async (c: Context, next: Next) => {
   const start = Date.now()
   const requestId = c.get('requestId') || 'unknown'
 
-  // Log incoming request
+  // Log request masuk
   logRequest('IN', c.req.method, c.req.path, requestId)
 
   await next()
@@ -40,7 +40,7 @@ function logResponse(
   if (env.NODE_ENV === 'development') {
     console.log(`${statusColor} [${dir}] ${method} ${path} ${status} ${duration}ms | ${requestId}`)
   } else {
-    // JSON format for production
+    // Format JSON untuk production
     console.log(
       JSON.stringify({
         type: 'request',

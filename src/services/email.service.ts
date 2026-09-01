@@ -2,10 +2,10 @@ import { env } from '../lib/env'
 
 /**
  * EMAIL SERVICE
- * Handles email sending for password reset
+ * Penjelasan: Handle email sending untuk password reset
  *
- * Current implementation: console logging
- * Production: integrate with SMTP or email service (SendGrid, Resend, etc.)
+ * Implementasi saat ini: console logging
+ * Production: integrasikan dengan SMTP atau email service (SendGrid, Resend, etc.)
  */
 
 export interface EmailOptions {
@@ -16,49 +16,49 @@ export interface EmailOptions {
 
 export const emailService = {
   /**
-   * Send email
-   * Currently logs to console in development
-   * In production, configure SMTP or use email service
+   * Kirim email
+   * Saat ini log ke console di development
+   * Di production, konfigurasi SMTP atau gunakan email service
    */
   send: async (options: EmailOptions): Promise<void> => {
     if (env.NODE_ENV === 'development') {
-      // Log email to console in dev
-      console.log('\n📧 Email sent:')
-      console.log(`   To: ${options.to}`)
-      console.log(`   Subject: ${options.subject}`)
-      console.log(`   Body:\n${options.html}\n`)
+      // Log email ke console di dev
+      console.log('\n📧 Email dikirim:')
+      console.log(`   Ke: ${options.to}`)
+      console.log(`   Subjek: ${options.subject}`)
+      console.log(`   Isi:\n${options.html}\n`)
       return
     }
 
-    // Production: send via configured provider
-    // Example with SMTP:
+    // Production: kirim via provider yang dikonfigurasi
+    // Contoh dengan SMTP:
     // await smtp.send(options)
 
-    // Example with SendGrid:
+    // Contoh dengan SendGrid:
     // await sgMail.send({ to: options.to, from: env.EMAIL_FROM, subject: options.subject, html: options.html })
 
-    console.log(`📧 Email would be sent to ${options.to}: ${options.subject}`)
+    console.log(`📧 Email akan dikirim ke ${options.to}: ${options.subject}`)
   },
 
   /**
-   * Send password reset email
+   * Kirim email reset password
    */
   sendPasswordReset: async (email: string, token: string, baseUrl: string = 'http://localhost:3000'): Promise<void> => {
     const resetUrl = `${baseUrl}/auth/reset-password?token=${token}`
 
     const html = `
-      <h2>Password Reset Request</h2>
-      <p>You requested a password reset for your account.</p>
-      <p>Click the link below to reset your password:</p>
+      <h2>Permintaan Reset Password</h2>
+      <p>Anda meminta reset password untuk akun Anda.</p>
+      <p>Klik link di bawah untuk reset password:</p>
       <a href="${resetUrl}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>
-      <p>Or copy this link: ${resetUrl}</p>
-      <p>This link expires in 1 hour.</p>
-      <p>If you didn't request this, please ignore this email.</p>
+      <p>Atau salin link ini: ${resetUrl}</p>
+      <p>Link ini berlaku 1 jam.</p>
+      <p>Jika Anda tidak meminta ini, abaikan email ini.</p>
     `
 
     await emailService.send({
       to: email,
-      subject: 'Password Reset - Hono Starter Kit',
+      subject: 'Reset Password - Hono Starter Kit',
       html,
     })
   },

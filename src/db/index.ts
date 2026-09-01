@@ -12,7 +12,7 @@ const sqlite = new Database('./data.db')
 export const db = drizzle(sqlite, { schema })
 
 /**
- * Health check - simple ping to DB
+ * Health check - ping sederhana ke DB
  */
 export const dbHealthCheck = () => {
   return sqlite.query('SELECT 1').all()

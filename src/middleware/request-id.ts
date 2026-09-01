@@ -1,17 +1,17 @@
 import { Context, Next } from 'hono'
 
 /**
- * REQUEST ID MIDDLEWARE
- * Generate unique ID per request for tracing
+ * MIDDLEWARE REQUEST ID
+ * Penjelasan: Generate unique ID per request untuk tracing
  */
 export const requestIdMiddleware = async (c: Context, next: Next) => {
-  // Check if request ID exists in header, otherwise generate new one
+  // Cek apakah request ID ada di header, kalau tidak generate baru
   const requestId = c.req.header('X-Request-ID') || crypto.randomUUID()
 
-  // Attach to context
+  // Simpan ke context
   c.set('requestId', requestId)
 
-  // Add to response header
+  // Tambahkan ke response header
   c.res.headers.set('X-Request-ID', requestId)
 
   await next()

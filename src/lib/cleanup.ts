@@ -2,55 +2,55 @@ import { sessionRepository, passwordResetRepository } from '../db/index'
 import { env } from '../lib/env'
 
 /**
- * SESSION CLEANUP JOB
- * Removes expired sessions and password reset tokens
+ * JOB CLEANUP SESSION
+ * Penjelasan: Hapus expired sessions dan password reset tokens
  *
- * In production, call this periodically via:
+ * Di production, panggil secara periodik via:
  * - Cron job (Vercel, Railway, Render)
  * - Kubernetes CronJob
- * - setInterval for simple deployments
+ * - setInterval untuk deployment sederhana
  */
 
 let cleanupInterval: Timer | null = null
 
 /**
- * Run cleanup once
+ * Jalankan cleanup sekali
  */
 export async function runCleanup(): Promise<{ sessionsDeleted: number; tokensDeleted: number }> {
   const before = Date.now()
 
-  // Get counts before (approximate - we'll just run cleanup)
+  // Cleanup expired sessions dan tokens
   await sessionRepository.cleanupExpired()
   await passwordResetRepository.cleanupExpired()
 
   const duration = Date.now() - before
 
   if (env.NODE_ENV !== 'production') {
-    console.log(`🧹 Cleanup completed in ${duration}ms`)
+    console.log(`🧹 Cleanup selesai dalam ${duration}ms`)
   }
 
   return { sessionsDeleted: 0, tokensDeleted: 0 }
 }
 
 /**
- * Start periodic cleanup (for development/simple deployments)
- * In production, use proper cron job instead
+ * Start scheduler cleanup periodik (untuk development/simple deployment)
+ * Di production, gunakan cron job yang proper
  */
 export function startCleanupScheduler(intervalMs: number = 60 * 60 * 1000): void {
   if (cleanupInterval) {
-    console.log('⚠️ Cleanup scheduler already running')
+    console.log('⚠️ Cleanup scheduler sudah berjalan')
     return
   }
 
-  // Run immediately on start
+  // Jalankan langsung saat start
   runCleanup().catch(console.error)
 
-  // Then run periodically
+  // Kemudian jalankan secara periodik
   cleanupInterval = setInterval(() => {
     runCleanup().catch(console.error)
   }, intervalMs)
 
-  console.log(`🧹 Cleanup scheduler started (every ${intervalMs / 1000 / 60} minutes)`)
+  console.log(`🧹 Cleanup scheduler started (setiap ${intervalMs / 1000 / 60} menit)`)
 }
 
 /**
@@ -60,11 +60,11 @@ export function stopCleanupScheduler(): void {
   if (cleanupInterval) {
     clearInterval(cleanupInterval)
     cleanupInterval = null
-    console.log('🧹 Cleanup scheduler stopped')
+    console.log('🧹 Cleanup scheduler dihentikan')
   }
 }
 
-// Export for manual triggering via API endpoint
+// Export untuk pemanggilan manual via API endpoint
 export const cleanupHandlers = {
   runCleanup,
   startCleanupScheduler,

@@ -4,7 +4,7 @@ import { swaggerUI } from '@hono/swagger-ui'
 
 /**
  * OPENAPI SPEC
- * API documentation for Hono Starter Kit
+ * Dokumentasi API untuk Hono Starter Kit
  */
 
 export const openapi = new OpenAPIHono()
