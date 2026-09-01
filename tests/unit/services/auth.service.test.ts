@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'bun:test'
-import { passwordService } from './password.service'
+import { passwordService } from '../../../src/services/password.service'
 
 // Mock repositories
 const mockUserRepository = {
@@ -25,7 +25,7 @@ const mockPasswordResetRepository = {
 }
 
 // Mock the db module
-vi.mock('../db/index', () => ({
+vi.mock('../../../src/db/index', () => ({
   userRepository: mockUserRepository,
   sessionRepository: mockSessionRepository,
   passwordResetRepository: mockPasswordResetRepository,
@@ -40,7 +40,7 @@ describe('Auth Service', () => {
     test('should throw error if email already exists', async () => {
       mockUserRepository.findByEmail.mockResolvedValue({ id: 1, email: 'test@test.com' })
 
-      const { authService } = await import('./auth.service')
+      const { authService } = await import('../../../src/services/auth.service')
 
       await expect(
         authService.register({
@@ -54,7 +54,7 @@ describe('Auth Service', () => {
     test('should throw error if password too short', async () => {
       mockUserRepository.findByEmail.mockResolvedValue(null)
 
-      const { authService } = await import('./auth.service')
+      const { authService } = await import('../../../src/services/auth.service')
 
       await expect(
         authService.register({
@@ -79,7 +79,7 @@ describe('Auth Service', () => {
       })
       mockSessionRepository.create.mockResolvedValue(undefined)
 
-      const { authService } = await import('./auth.service')
+      const { authService } = await import('../../../src/services/auth.service')
 
       const result = await authService.register({
         email: 'test@test.com',
@@ -98,7 +98,7 @@ describe('Auth Service', () => {
     test('should throw error if user not found', async () => {
       mockUserRepository.findByEmail.mockResolvedValue(null)
 
-      const { authService } = await import('./auth.service')
+      const { authService } = await import('../../../src/services/auth.service')
 
       await expect(
         authService.login({
@@ -116,7 +116,7 @@ describe('Auth Service', () => {
         passwordHash: hashedPassword,
       })
 
-      const { authService } = await import('./auth.service')
+      const { authService } = await import('../../../src/services/auth.service')
 
       await expect(
         authService.login({
@@ -140,7 +140,7 @@ describe('Auth Service', () => {
       })
       mockSessionRepository.create.mockResolvedValue(undefined)
 
-      const { authService } = await import('./auth.service')
+      const { authService } = await import('../../../src/services/auth.service')
 
       const result = await authService.login({
         email: 'test@test.com',
@@ -157,7 +157,7 @@ describe('Auth Service', () => {
     test('should return null for invalid session', async () => {
       mockSessionRepository.findById.mockResolvedValue(null)
 
-      const { authService } = await import('./auth.service')
+      const { authService } = await import('../../../src/services/auth.service')
 
       const result = await authService.validateSession('invalid-session')
       expect(result).toBeNull()
@@ -179,7 +179,7 @@ describe('Auth Service', () => {
         },
       })
 
-      const { authService } = await import('./auth.service')
+      const { authService } = await import('../../../src/services/auth.service')
 
       const result = await authService.validateSession('valid-session')
 
@@ -193,7 +193,7 @@ describe('Auth Service', () => {
     test('should delete session', async () => {
       mockSessionRepository.delete.mockResolvedValue(undefined)
 
-      const { authService } = await import('./auth.service')
+      const { authService } = await import('../../../src/services/auth.service')
 
       await authService.logout('session-id')
 
@@ -205,7 +205,7 @@ describe('Auth Service', () => {
     test('should delete all user sessions', async () => {
       mockSessionRepository.deleteAllUserSessions.mockResolvedValue(undefined)
 
-      const { authService } = await import('./auth.service')
+      const { authService } = await import('../../../src/services/auth.service')
 
       await authService.logoutAllDevices(1)
 

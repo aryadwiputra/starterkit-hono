@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
-import { passwordService } from './password.service'
+import { passwordService } from '../../../src/services/password.service'
 
 describe('Password Service', () => {
   test('should hash password', async () => {

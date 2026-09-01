@@ -27,18 +27,29 @@ src/
 ├── services/
 │   ├── auth.service.ts    # Login, register, logout, password reset
 │   ├── user.service.ts    # User CRUD + profile management
-│   └── password.service.ts # Password hashing (bcrypt)
+│   ├── password.service.ts # Password hashing (bcrypt)
+│   └── email.service.ts   # Email sending (password reset)
 ├── middleware/
 │   ├── auth.middleware.ts      # Session validation
 │   ├── rbac.middleware.ts      # Role-based access control
 │   ├── error.middleware.ts     # Global error handler
-│   └── rate-limit.ts          # Rate limiting
+│   ├── rate-limit.ts          # Rate limiting
+│   ├── request-id.ts          # Request ID tracing
+│   └── request-logger.ts      # Request/response logging
 ├── routes/
 │   ├── auth.routes.ts     # Auth endpoints
 │   └── user.routes.ts     # User CRUD endpoints
 ├── lib/
-│   └── env.ts             # Environment validation
+│   ├── env.ts             # Environment validation
+│   └── cleanup.ts         # Session cleanup scheduler
+├── docs/
+│   └── openapi.ts         # OpenAPI/Swagger documentation
 └── index.ts               # App entry, global middleware
+
+tests/
+├── unit/
+│   ├── services/          # Service unit tests
+│   └── middleware/        # Middleware unit tests
 ```
 
 ## Layer Flow

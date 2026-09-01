@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach } from 'bun:test'
 import { Hono } from 'hono'
-import { requireRole, requireOwnerOrAdmin, allowSelfOrAdmin } from './rbac.middleware'
+import { requireRole, requireOwnerOrAdmin, allowSelfOrAdmin } from '../../../src/middleware/rbac.middleware'
 
 describe('RBAC Middleware', () => {
   let app: Hono
