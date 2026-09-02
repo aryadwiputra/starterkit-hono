@@ -11,7 +11,9 @@
       "Bash(curl -s -X POST http://localhost:3000/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"test@baru.com\",\"password\":\"password123\"}')",
       "Bash(curl -s http://localhost:3000/auth/me -H \"Authorization: Bearer M1k6829GSlhv75TjUFrB4dysa1JXqxi8\")",
       "Bash(git *)",
-      "Bash(gh *)"
+      "Bash(gh *)",
+      "Bash(rtk grep *)",
+      "Bash(DB_CONNECTION=sqlite DATABASE_URL=file:./data.db bun run *)"
     ]
   }
 }

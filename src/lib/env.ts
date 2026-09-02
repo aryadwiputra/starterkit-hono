@@ -15,6 +15,7 @@ const envSchema = z.object({
   LOG_DIR: z.string().default('logs'),
 
   // Database
+  DB_CONNECTION: z.enum(['mysql', 'pgsql', 'sqlite']).default('sqlite'),
   DATABASE_URL: z.string().default('file:./data.db'),
 
   // Session

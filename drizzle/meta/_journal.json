@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1788233445289,
-      "tag": "0000_initial_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1725148800000,
-      "tag": "0001_add_rbac_tables",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1725148900000,
-      "tag": "0002_add_audit_and_files",
+      "when": 1788311702636,
+      "tag": "0000_wonderful_sugar_man",
       "breakpoints": true
     }
   ]
