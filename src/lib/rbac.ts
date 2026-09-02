@@ -3,10 +3,9 @@
  * Penjelasan: Helper functions untuk permission checking
  */
 
-import { db } from '../db'
-import { userRoles, rolePermissions, permissions, roles } from '../db/schema'
+import { db, userRoles, rolePermissions, permissions, roles } from '../db'
 import { eq, and } from 'drizzle-orm'
-import type { Role } from '../db/schema'
+import type { Role } from '../db'
 
 /**
  * Check apakah user punya permission tertentu

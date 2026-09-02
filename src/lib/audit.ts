@@ -1,5 +1,4 @@
-import { db } from '../db'
-import { auditLogs } from '../db/schema'
+import { db, auditLogs } from '../db'
 import { logger } from './logger'
 
 /**

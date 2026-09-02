@@ -1,14 +1,23 @@
 import type { Config } from 'drizzle-kit'
 
-/**
- * Drizzle Kit Config
- * Penjelasan: Konfigurasi untuk database migrations
- */
+const dialect = process.env.DB_CONNECTION || 'sqlite'
+
+const dbUrl =
+  process.env.DATABASE_URL ||
+  (dialect === 'sqlite' ? 'file:./data.db' : '')
+
+const schema =
+  dialect === 'mysql'
+    ? './src/db/schema.mysql.ts'
+    : dialect === 'pgsql'
+      ? './src/db/schema.pgsql.ts'
+      : './src/db/schema.sqlite.ts'
+
 export default {
-  schema: './src/db/schema.ts',
+  schema,
   out: './drizzle',
-  dialect: 'sqlite',
+  dialect: dialect as 'mysql' | 'pgsql' | 'sqlite',
   dbCredentials: {
-    url: 'file:./data.db',
+    url: dbUrl,
   },
 } satisfies Config

@@ -4,8 +4,7 @@ import { z } from 'zod'
 import { authMiddleware } from '../middleware'
 import { requirePermission } from '../middleware/rbac.middleware'
 import { uploadFile, getPresignedUrl, deleteFile } from '../lib/storage'
-import { db } from '../db'
-import { files } from '../db/schema'
+import { db, files } from '../db'
 
 const upload = new Hono()
 
